@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+Frontend/node_modules/
+Backend/SecureCarbonX/backend/node_modules/
+Backend/SecureCarbonX/contracts/node_modules/
+
+# Python Environment
+venv/
+Backend/SecureCarbonX/ai-service/venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Environment Variables & Keys
+.env
+Backend/SecureCarbonX/ai-service/.env
+Backend/SecureCarbonX/backend/.env
+
+# Build Artifacts & Logs
+dist/
+build/
+Frontend/dist/
+Frontend/build_log.txt
+*.log
+build_log.txt
+
+# Local Setup & Test Scripts (Excluded from Repo)
+test_*.py
+launch.ps1
+commands.txt
+Backend/SecureCarbonX/ai-service/test_*.py
+
+# OS Metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Hardcoded AI Models & Prototypes
+yolov8n.pt
+yolov8m.pt
+Backend/SecureCarbonX/ai-service/*.pt
+*.pt
