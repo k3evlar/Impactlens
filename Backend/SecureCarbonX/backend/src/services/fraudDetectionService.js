@@ -434,5 +434,6 @@ module.exports = {
     calculateImageHash,
     createPerceptualFingerprint,
     getPublicVerificationData,
-    readStore
+    readStore,
+    writeStore
 };

@@ -17,6 +17,7 @@ import ProfilePage from "./pages/Profile";
 import Login from "./pages/Login";
 import Verify from "./pages/Verify";
 import NotFound from "./pages/NotFound";
+import ESGDashboard from "./pages/ESGDashboard";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/marketplace" element={<MarketplacePage />} />
             <Route path="/purchases" element={<PurchasesPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/esg" element={<ESGDashboard />} />
           </Route>
           
           <Route path="/verify/:imageHash" element={<Verify />} />

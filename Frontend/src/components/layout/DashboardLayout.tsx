@@ -6,7 +6,8 @@ import {
   History as HistoryIcon, 
   Coins, 
   Trophy, 
-  BarChart3, 
+  BarChart3,
+  BarChart2, 
   LogOut, 
   Leaf,
   Menu,
@@ -26,6 +27,7 @@ const navItems = [
   { name: "Purchases", path: "/purchases", icon: Receipt },
   { name: "Leaderboard", path: "/leaderboard", icon: Trophy },
   { name: "Impact", path: "/impact", icon: BarChart3 },
+  { name: "ESG Dashboard", path: "/esg", icon: BarChart2 },
 ];
 
 const DashboardLayout = () => {
