@@ -28,7 +28,7 @@ function getOrCreateWallet(userKey) {
     return wallet;
 }
 
-function addCredits(userKey, amount) {
+function addCredits(userKey, amount, metadata = {}) {
     const store = readStore();
     let wallet = store.wallets.find(w => w.userKey === userKey);
     
@@ -45,14 +45,15 @@ function addCredits(userKey, amount) {
         store.wallets.push(wallet);
     }
 
-    wallet.credits += amount;
-    wallet.totalEarned += amount;
+    wallet.credits = Math.round((wallet.credits + amount) * 100) / 100;
+    wallet.totalEarned = Math.round((wallet.totalEarned + amount) * 100) / 100;
     wallet.tier = getTier(wallet.totalEarned);
     
     wallet.transactions.push({
         type: 'earned',
         amount: amount,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        ...metadata
     });
 
     writeStore(store);
@@ -67,8 +68,8 @@ function redeemCredits(userKey, amount, itemName) {
         throw new Error("Insufficient credits");
     }
 
-    wallet.credits -= amount;
-    wallet.totalSpent += amount;
+    wallet.credits = Math.round((wallet.credits - amount) * 100) / 100;
+    wallet.totalSpent = Math.round((wallet.totalSpent + amount) * 100) / 100;
     
     wallet.purchases.push({
         item: itemName,

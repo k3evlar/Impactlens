@@ -6,6 +6,12 @@ const { addCredits } = require('../services/walletService');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
 
+const pinataSDK = require('@pinata/sdk');
+const pinata = new pinataSDK(
+    process.env.PINATA_API_KEY,
+    process.env.PINATA_SECRET_API_KEY
+);
+
 function createMockIpfsUri(imageHash) {
     return `ipfs://mock-${imageHash.substring(0, 32)}`;
 }
@@ -90,26 +96,60 @@ async function uploadAndVerify(req, res) {
             });
         }
 
-        // 3. Optional: Upload to IPFS via Pinata
+        // 3. Official IPFS Pinning via Pinata SDK
         let ipfsUri;
         let storageMode = 'mock';
 
-        if (process.env.PINATA_JWT) {
-            const pinataFormData = new FormData();
-            pinataFormData.append('file', req.file.buffer, {
-                filename: `${imageHash}.jpg`,
-                contentType: req.file.mimetype,
-            });
+        if (process.env.PINATA_API_KEY && process.env.PINATA_SECRET_API_KEY) {
+            try {
+                const { Readable } = require('stream');
+                const stream = Readable.from(req.file.buffer);
 
-            const pinataResponse = await axios.post("https://api.pinata.cloud/pinning/pinFileToIPFS", pinataFormData, {
-                headers: {
-                    ...pinataFormData.getHeaders(),
-                    Authorization: `Bearer ${process.env.PINATA_JWT}`
-                }
-            });
+                const options = {
+                    pinataMetadata: {
+                        name: `SecureCarbonX-${imageHash.substring(0, 8)}.jpg`,
+                        keyvalues: {
+                            activity: activity,
+                            impactScore: impactScore,
+                            finalDecision: finalDecision,
+                            imageHash: imageHash
+                        }
+                    },
+                    pinataOptions: {
+                        cidVersion: 0
+                    }
+                };
 
-            ipfsUri = `ipfs://${pinataResponse.data.IpfsHash}`;
-            storageMode = 'pinata';
+                const pinResult = await pinata.pinFileToIPFS(stream, options);
+                ipfsUri = `ipfs://${pinResult.IpfsHash}`;
+                storageMode = 'pinata-sdk';
+                console.log(`[Pinata] Successfully pinned: ${pinResult.IpfsHash}`);
+            } catch (pinError) {
+                console.error("[Pinata SDK Error]:", pinError.message);
+                ipfsUri = createMockIpfsUri(imageHash);
+                storageMode = 'mock-fallback';
+            }
+        } else if (process.env.PINATA_JWT) {
+            // Legacy Fallback for JWT if API keys aren't provided
+            try {
+                const pinataFormData = new FormData();
+                pinataFormData.append('file', req.file.buffer, {
+                    filename: `${imageHash}.jpg`,
+                    contentType: req.file.mimetype,
+                });
+
+                const pinataResponse = await axios.post("https://api.pinata.cloud/pinning/pinFileToIPFS", pinataFormData, {
+                    headers: {
+                        ...pinataFormData.getHeaders(),
+                        Authorization: `Bearer ${process.env.PINATA_JWT}`
+                    }
+                });
+
+                ipfsUri = `ipfs://${pinataResponse.data.IpfsHash}`;
+                storageMode = 'pinata-jwt';
+            } catch (err) {
+                ipfsUri = createMockIpfsUri(imageHash);
+            }
         } else {
             ipfsUri = createMockIpfsUri(imageHash);
         }
@@ -117,10 +157,8 @@ async function uploadAndVerify(req, res) {
         recordData.ipfsUri = ipfsUri;
         storeFraudRecord(recordData);
 
-        // 3.5. Update USER WALLET (Real Backend Persistence)
-        if (finalDecision === 'ACCEPT') {
-            addCredits(sessionKey, impactScore / 10);
-        }
+        // 3.5. Update USER WALLET (Real Backend Persistence) -> MOVED TO MINT STAGE
+        // Credits are now added only when the user chooses to 'Mint' their verified action.
 
         // 4. Return Final ImpactLens Result
         return res.json({
@@ -147,12 +185,31 @@ async function mintCredit(req, res) {
         return res.status(400).json({ error: 'imageHash or ipfsUri is required' });
     }
     try {
+        const userKey = req.headers['x-user-key'] || req.body.userKey || req.ip;
         const mintResult = markCreditAsMinted({ imageHash, ipfsUri, mintTxId });
+        
         if (!mintResult || !mintResult.success) {
             return res.status(400).json({ error: mintResult?.message || 'Minting failed' });
         }
-        return res.json({ success: true, minted: true, ...mintResult.record });
+
+        // Add credits to user wallet now that it's successfully minted
+        const amount = (mintResult.record.impactScore || 0) / 10;
+        if (amount > 0) {
+            addCredits(userKey, amount, {
+                item: mintResult.record.activity || 'Verified Impact',
+                ipfsUri: mintResult.record.ipfsUri || ipfsUri || null,
+                imageHash: mintResult.record.imageHash
+            });
+        }
+
+        return res.json({ 
+            success: true, 
+            minted: true, 
+            creditsEarned: amount,
+            ...mintResult.record 
+        });
     } catch (error) {
+        console.error("Mint Credit Error:", error);
         return res.status(500).json({ error: 'Minting service error' });
     }
 }

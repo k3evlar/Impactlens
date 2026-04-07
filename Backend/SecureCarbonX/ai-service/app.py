@@ -1,14 +1,13 @@
 from __future__ import annotations
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 import json
 import tempfile
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from engine import ImpactLensEngine
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 app = FastAPI(title="ImpactLens AI Service")
 

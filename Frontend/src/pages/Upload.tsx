@@ -6,8 +6,10 @@ import StepIndicator, { type VerificationStep } from "@/components/StepIndicator
 import UploadCard, { type UploadMetadata } from "@/components/UploadCard";
 import ProcessingAnimation from "@/components/ProcessingAnimation";
 import VerificationResult, { type VerificationData } from "@/components/VerificationResult";
+import { useWallet } from "@/hooks/use-wallet";
 
 const UploadPage = () => {
+  const { refreshWallet } = useWallet();
   const [step, setStep] = useState<VerificationStep>("upload");
   const [isLoading, setIsLoading] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
@@ -140,15 +142,24 @@ const UploadPage = () => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
     try {
       if (result?.imageHash || result?.ipfsUri) {
+        const userKey = (() => {
+          const userStr = localStorage.getItem("user");
+          if (userStr) {
+            try { return JSON.parse(userStr).email || "anonymous"; } catch(e) {}
+          }
+          return "anonymous";
+        })();
+
         const mintResponse = await fetch('http://localhost:5000/api/mint-credit', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'x-user-key': userKey
           },
           body: JSON.stringify({
             imageHash: result?.imageHash,
             ipfsUri: result?.ipfsUri,
-            mintTxId: `mint-${Date.now()}`
+            mintTxId: `0x${crypto.getRandomValues(new Uint8Array(32)).reduce((s, b) => s + b.toString(16).padStart(2, '0'), '')}`
           })
         });
 
@@ -158,30 +169,8 @@ const UploadPage = () => {
         }
       }
 
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        if (user.email) {
-          const dataKey = `data_${user.email}`;
-          const existingData = localStorage.getItem(dataKey);
-          const userData = existingData ? JSON.parse(existingData) : { credits: 0, uploads: [], history: [], transactions: [] };
-
-          if (!userData.transactions) userData.transactions = [];
-
-          userData.credits = (userData.credits || 0) + 1;
-          userData.transactions.push({
-            type: "earned",
-            amount: 1,
-            ipfsUri: result?.ipfsUri || "",
-            imageHash: result?.imageHash || "",
-            minted: true,
-            timestamp: Date.now(),
-          });
-
-          localStorage.setItem(dataKey, JSON.stringify(userData));
-          window.dispatchEvent(new Event("storage"));
-        }
-      }
+      // Refresh global wallet state
+      refreshWallet();
       toast.success("🎉 Carbon Credit Minted Successfully!");
       handleReset();
     } catch (e) { 

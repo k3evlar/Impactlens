@@ -7,6 +7,7 @@ import {
   Coins, 
   Trophy, 
   BarChart3, 
+  BarChart2,
   LogOut, 
   Leaf,
   Menu,
@@ -16,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Chatbot from "../Chatbot";
+import { useWallet } from "@/hooks/use-wallet";
 
 const navItems = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -26,35 +28,24 @@ const navItems = [
   { name: "Purchases", path: "/purchases", icon: Receipt },
   { name: "Leaderboard", path: "/leaderboard", icon: Trophy },
   { name: "Impact", path: "/impact", icon: BarChart3 },
+  { name: "ESG Dashboard", path: "/esg", icon: BarChart2 },
 ];
 
 const DashboardLayout = () => {
   const [userName, setUserName] = useState<string>("");
-  const [credits, setCredits] = useState<number>(0);
+  const { credits } = useWallet();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const parseCredits = () => {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr);
-          setUserName(user.name || "User");
-          const dataStr = localStorage.getItem(`data_${user.email}`);
-          if (dataStr) {
-            setCredits(JSON.parse(dataStr).credits || 0);
-          } else {
-            setCredits(0);
-          }
-        } catch (e) {}
-      }
-    };
-    
-    parseCredits();
-    window.addEventListener("storage", parseCredits);
-    return () => window.removeEventListener("storage", parseCredits);
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserName(user.name || "User");
+      } catch (e) {}
+    }
   }, []);
 
   const handleLogout = () => {
@@ -183,7 +174,7 @@ const DashboardLayout = () => {
           <div className="flex items-center justify-end w-full md:w-auto gap-4 ml-auto">
             <div className="flex items-center gap-4">
                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/10 px-3.5 py-1.5 text-sm font-bold text-green-500 shadow-sm whitespace-nowrap overflow-hidden transition-all duration-300">
-                 💰 Credits: {credits}
+                 💰 Credits: {credits.toFixed(2)} CC
                </span>
             </div>
             <div className="hidden sm:flex border-r border-border/50 h-6 mx-1"></div>

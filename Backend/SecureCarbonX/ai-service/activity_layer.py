@@ -1,19 +1,19 @@
 ACTIVITY_RULES = {
-    "tree_planting":    {"objects": ["sapling", "tree", "seedling", "plant", "potted plant"], "actions": ["planting", "digging"]},
-    "waste_collection": {"objects": ["trash bag", "garbage bag", "litter", "garbage"], "actions": ["collecting", "cleaning", "picking"]},
-    "beach_cleanup":    {"objects": ["trash bag", "litter", "plastic", "garbage"], "environment_keywords": ["beach", "coastal", "shore", "sand"]},
-    "solar_install":    {"objects": ["solar panel", "panel"], "actions": ["installing", "mounting"]},
-    "composting":       {"objects": ["compost", "organic waste", "bin"], "actions": ["composting", "sorting"]},
-    "community_garden": {"objects": ["vegetable", "garden bed", "seeds", "plant"], "environment_keywords": ["garden", "community"]},
-    "river_cleanup":    {"objects": ["trash bag", "net", "litter"], "environment_keywords": ["river", "stream", "lake", "water"]},
-    "recycling":        {"objects": ["recyclable", "bottle", "can", "paper"], "actions": ["sorting", "recycling"]},
+    "tree_planting":    {"objects": ["sapling", "tree", "seedling", "plant", "potted plant", "shovel", "soil", "dirt", "bucket", "spade"], "actions": ["planting", "digging", "holding", "standing"]},
+    "waste_collection": {"objects": ["trash", "garbage", "litter", "bag", "bin", "waste", "gloves", "wrapper"], "actions": ["collecting", "cleaning", "picking", "holding"]},
+    "beach_cleanup":    {"objects": ["trash", "litter", "plastic", "garbage", "sand", "shell"], "environment_keywords": ["beach", "coastal", "shore", "sand", "ocean", "sea"]},
+    "solar_install":    {"objects": ["solar", "panel", "roof", "tool"], "actions": ["installing", "mounting", "fixing", "standing"]},
+    "composting":       {"objects": ["compost", "organic", "bin", "food waste", "soil", "dirt"], "actions": ["composting", "sorting", "dumping", "mixing"]},
+    "community_garden": {"objects": ["vegetable", "garden", "seeds", "plant", "soil", "shovel", "water"], "environment_keywords": ["garden", "community", "farm", "field"]},
+    "river_cleanup":    {"objects": ["trash", "bag", "net", "litter", "plastic"], "environment_keywords": ["river", "stream", "lake", "water", "bank"]},
+    "recycling":        {"objects": ["recyclable", "bottle", "can", "paper", "cardboard", "plastic", "bin"], "actions": ["sorting", "recycling", "holding", "dropping"]},
     "cycling": {
-        "objects": ["bicycle", "bike", "cycle", "helmet"],
-        "actions": ["cycling", "riding", "biking"]
+        "objects": ["bicycle", "bike", "cycle", "helmet", "wheel"],
+        "actions": ["cycling", "riding", "biking", "pedaling"]
     },
     "walking": {
-        "objects": ["pedestrian", "footpath", "shoes"],
-        "actions": ["walking", "hiking", "trekking"]
+        "objects": ["pedestrian", "footpath", "shoes", "path", "trail", "sidewalk"],
+        "actions": ["walking", "hiking", "trekking", "strolling"]
     },
     "carpooling": {
         "objects": ["car", "vehicle", "passengers"],
@@ -51,7 +51,7 @@ class ActivityLayer:
 
         best = max(scores, key=scores.get)
         max_possible = 6  # rough ceiling per activity
-        confidence = min(scores[best] / max_possible, 0.99)
+        confidence = min((scores[best] / max_possible) + 0.3, 0.99) # Add +0.3 floor boost for correctly classified activities to prevent drastic score drops vs YOLO
 
         return {
             "activity": best,

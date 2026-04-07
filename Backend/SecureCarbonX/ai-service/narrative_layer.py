@@ -2,9 +2,11 @@ import os
 from groq import Groq
 
 class NarrativeLayer:
-    def __init__(self, api_key: str = None):
-        self.api_key = api_key or os.environ.get("GROQ_API_KEY")
-        self.client = Groq(api_key=self.api_key)
+    def __init__(self):
+        GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+        if not GROQ_API_KEY:
+            raise RuntimeError("GROQ_API_KEY missing in environment")
+        self.groq_client = Groq(api_key=GROQ_API_KEY)
         self.narrative_model = "llama-3.3-70b-versatile"
 
     def generate_narrative(self, activity: str, impact: dict, vision: dict) -> str:
@@ -18,13 +20,16 @@ class NarrativeLayer:
                 "impact score. Be specific about environmental and social "
                 "benefits. Professional, factual, encouraging tone."
             )
-            response = self.client.chat.completions.create(
+            response = self.groq_client.chat.completions.create(
                 model=self.narrative_model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=200
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
+            if "401" in str(e) or "Authentication" in str(e):
+                print("[NarrativeLayer] CRITICAL GROQ AUTH ERROR - RAISING")
+                raise e
             print(f"Narrative Error: {e}")
             return (
                 f"This {activity.replace('_', ' ')} activity contributes "
@@ -46,13 +51,16 @@ class NarrativeLayer:
                 "Write 2 clear, confident sentences. "
                 "If data is limited, say what you can see and nothing more."
             )
-            response = self.client.chat.completions.create(
+            response = self.groq_client.chat.completions.create(
                 model=self.narrative_model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=200
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
+            if "401" in str(e) or "Authentication" in str(e):
+                print("[NarrativeLayer] CRITICAL GROQ AUTH ERROR - RAISING")
+                raise e
             print(f"What Is Happening Error: {e}")
             return (
                 f"The image shows a person engaged in {activity.replace('_', ' ')} "
@@ -77,7 +85,7 @@ class NarrativeLayer:
                 "\"Involve neighbors to increase community scale\", "
                 "\"Document GPS location for carbon credit verification\"]"
             )
-            response = self.client.chat.completions.create(
+            response = self.groq_client.chat.completions.create(
                 model=self.narrative_model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=200
@@ -87,6 +95,9 @@ class NarrativeLayer:
             import json
             return json.loads(raw)
         except Exception as e:
+            if "401" in str(e) or "Authentication" in str(e):
+                print("[NarrativeLayer] CRITICAL GROQ AUTH ERROR - RAISING")
+                raise e
             print(f"Improvements Error: {e}")
             return [
                 "Involve more community members to increase scale impact",

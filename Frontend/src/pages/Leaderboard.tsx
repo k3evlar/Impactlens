@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Medal, Award, Crown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
+import { useWallet } from "@/hooks/use-wallet";
 
 const MOCK_USERS = [
   { name: "Rahul", credits: 8 },
@@ -12,40 +13,31 @@ const MOCK_USERS = [
 ];
 
 const LeaderboardPage = () => {
+  const { credits } = useWallet();
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
 
   useEffect(() => {
     let activeName = "User";
-    let activeCredits = 0;
+    let activeCredits = credits;
 
     const userStr = localStorage.getItem("user");
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
         activeName = user.name || "User";
-
-        if (user.email) {
-          const dataKey = `data_${user.email}`;
-          const userDataStr = localStorage.getItem(dataKey);
-          if (userDataStr) {
-            const userData = JSON.parse(userDataStr);
-            activeCredits = userData.credits || 0;
-          }
-        }
       } catch (e) {
         console.error("Failed to parse user data", e);
       }
     }
 
     // Combine mock data with active user securely
-    // We prevent duplicate entries by omitting a mock user if they share the exact name as your active login string
     const filteredMock = MOCK_USERS.filter((u) => u.name !== activeName);
     const combined = [...filteredMock, { name: activeName, credits: activeCredits, isCurrent: true }];
     
     // Sort highest first dynamically
     const sorted = combined.sort((a, b) => b.credits - a.credits);
     setLeaderboard(sorted);
-  }, []);
+  }, [credits]); // Sync when credits (from hook) change
 
   const getRankAppearance = (rank: number) => {
     switch(rank) {

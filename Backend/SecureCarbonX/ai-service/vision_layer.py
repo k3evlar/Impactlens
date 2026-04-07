@@ -5,9 +5,11 @@ from groq import Groq
 from ultralytics import YOLO
 
 class VisionLayer:
-    def __init__(self, api_key: str = None):
-        self.api_key = api_key or os.environ.get("GROQ_API_KEY")
-        self.client = Groq(api_key=self.api_key)
+    def __init__(self):
+        GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+        if not GROQ_API_KEY:
+            raise RuntimeError("GROQ_API_KEY missing in environment")
+        self.groq_client = Groq(api_key=GROQ_API_KEY)
         self.vision_model = "meta-llama/llama-4-scout-17b-16e-instruct"
         
         # Load local YOLO model
@@ -22,6 +24,9 @@ class VisionLayer:
         try:
             groq_analysis = self._groq_vision(image_path)
         except Exception as e:
+            if "401" in str(e) or "Authentication" in str(e):
+                print("[VisionLayer] CRITICAL GROQ AUTH ERROR - RAISING")
+                raise e
             print(f"Groq Vision Error: {e}")
             print("[VisionLayer] Using YOLO-only fallback")
             groq_analysis = self._yolo_only_fallback(image_path)
@@ -69,7 +74,7 @@ class VisionLayer:
             "4. Return ONLY valid JSON. No markdown, no backticks, no explanation."
         )
 
-        response = self.client.chat.completions.create(
+        response = self.groq_client.chat.completions.create(
             model=self.vision_model,
             messages=[{
                 "role": "user",

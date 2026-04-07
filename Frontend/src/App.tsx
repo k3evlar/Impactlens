@@ -14,6 +14,7 @@ import ImpactPage from "./pages/Impact";
 import MarketplacePage from "./pages/Marketplace";
 import PurchasesPage from "./pages/Purchases";
 import ProfilePage from "./pages/Profile";
+import ESGDashboard from "./pages/ESGDashboard";
 import Login from "./pages/Login";
 import Verify from "./pages/Verify";
 import NotFound from "./pages/NotFound";
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/marketplace" element={<MarketplacePage />} />
             <Route path="/purchases" element={<PurchasesPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/esg" element={<ESGDashboard />} />
           </Route>
           
           <Route path="/verify/:imageHash" element={<Verify />} />

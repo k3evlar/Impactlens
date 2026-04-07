@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { useWallet } from "@/hooks/use-wallet";
 import { getUserTier } from "@/lib/utils";
 
 const STATES = [
@@ -27,6 +28,7 @@ const CITIES: Record<string, string[]> = {
 };
 
 const ProfilePage = () => {
+  const { credits, tier, transactions, isLoading } = useWallet();
   const [userProfile, setUserProfile] = useState({ name: "", email: "", city: "", state: "" });
   const [stats, setStats] = useState({ credits: 0, uploads: 0, verified: 0 });
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
@@ -54,25 +56,25 @@ const ProfilePage = () => {
           state: user.state || ""
         });
 
-        // Load specific user data bucket
+        // Load specific user data bucket (for history/uploads only)
         if (user.email) {
           const dataKey = `data_${user.email}`;
           const userDataStr = localStorage.getItem(dataKey);
           if (userDataStr) {
             const userData = JSON.parse(userDataStr);
             
-            // Map Stats
+            // Map Stats (Credits from hook, others from localStorage)
             setStats({
-              credits: userData.credits || 0,
+              credits: credits,
               uploads: (userData.uploads || []).length > 0 ? userData.uploads.length : (userData.history || []).length,
               verified: (userData.history || []).filter((h: any) => h.verified).length,
             });
 
-            // Map Recent Transactions (last 3)
-            const sortedTx = (userData.transactions || []).sort((a: any, b: any) => b.timestamp - a.timestamp);
+            // Map Recent Transactions from Hook
+            const sortedTx = [...transactions].sort((a: any, b: any) => b.timestamp - a.timestamp);
             setRecentTransactions(sortedTx.slice(0, 3));
 
-            // Map Recent Uploads (last 3)
+            // Map Recent Uploads (last 3) from localStorage
             const sortedHistory = (userData.history || []).sort((a: any, b: any) => b.timestamp - a.timestamp);
             setRecentUploads(sortedHistory.slice(0, 3));
           }
@@ -81,7 +83,7 @@ const ProfilePage = () => {
         console.error("Profile payload failed to parse.");
       }
     }
-  }, []);
+  }, [credits, transactions]);
 
   const handleSaveProfile = () => {
     // Save to localStorage 'user' string
@@ -149,7 +151,7 @@ const ProfilePage = () => {
                     <div className="flex flex-col items-center gap-1.5">
                       <h2 className="text-2xl font-bold font-heading">{userProfile.name}</h2>
                       <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-bold uppercase tracking-widest text-primary shadow-sm hover:scale-105 transition-transform cursor-default">
-                        {getUserTier(stats.credits)}
+                      {tier}
                       </span>
                     </div>
                     <p className="text-muted-foreground flex items-center justify-center gap-1.5 text-sm mt-3">
@@ -266,7 +268,7 @@ const ProfilePage = () => {
                    <h3 className="font-heading font-bold text-xl flex items-center gap-2">
                      <Coins className="w-5 h-5 text-green-500" /> Wallet Summary
                    </h3>
-                   <span className="font-bold text-3xl font-heading text-green-500">{stats.credits} CC</span>
+                   <span className="font-bold text-3xl font-heading text-green-500">{Number(stats.credits || 0).toFixed(2)} CC</span>
                 </div>
 
                 <div className="space-y-3">
@@ -279,7 +281,7 @@ const ProfilePage = () => {
                           <div key={idx} className={`flex items-center justify-between p-4 rounded-xl bg-secondary/30 border border-border/30 transition-colors ${tx.type === 'spent' ? 'hover:border-red-500/30' : 'hover:border-green-500/30'}`}>
                              <div className="flex flex-col">
                                <span className={`font-semibold flex items-center gap-2 ${tx.type === 'spent' ? 'text-red-500' : 'text-green-500'}`}>
-                                 <Coins className="w-4 h-4" /> {tx.type === 'spent' ? `-${tx.amount || 1} Credits Spent` : `+${tx.amount || 1} Credit Earned`}
+                                 <Coins className="w-4 h-4" /> {tx.type === 'spent' ? `-${Number(tx.amount || 1).toFixed(2)} Credits Spent` : `+${Number(tx.amount || 1).toFixed(2)} Credit Earned`}
                                </span>
                                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 mt-1.5">
                                  <Calendar className="w-3.5 h-3.5" /> {new Date(tx.timestamp).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}

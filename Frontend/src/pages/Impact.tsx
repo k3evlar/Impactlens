@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { TreePine, CloudFog } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { useWallet } from "@/hooks/use-wallet";
 
 // Helper component for count-up animation
 const AnimatedNumber = ({ value }: { value: number }) => {
@@ -17,26 +18,7 @@ const AnimatedNumber = ({ value }: { value: number }) => {
 };
 
 const ImpactPage = () => {
-  const [credits, setCredits] = useState(0);
-
-  useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        if (user.email) {
-          const dataKey = `data_${user.email}`;
-          const userDataStr = localStorage.getItem(dataKey);
-          if (userDataStr) {
-            const userData = JSON.parse(userDataStr);
-            setCredits(userData.credits || 0);
-          }
-        }
-      } catch (e) {
-        console.error("Failed to load impact stats", e);
-      }
-    }
-  }, []);
+  const { credits } = useWallet();
 
   const treesPlanted = credits;
   const co2Offset = credits * 10;

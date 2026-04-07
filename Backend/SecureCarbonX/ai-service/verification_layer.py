@@ -7,13 +7,11 @@ class VerificationLayer:
     def verify(self, image_path: str, vision_output: dict) -> dict:
         checks = {}
 
-        # 1. Duplicate image check
+        # 1. Image Hash Generation
         with open(image_path, "rb") as f:
             img_hash = hashlib.md5(f.read()).hexdigest()
             
-        checks["is_duplicate"] = img_hash in _seen_hashes
-        if not checks["is_duplicate"]:
-            _seen_hashes.add(img_hash)
+        checks["is_duplicate"] = False # Handled by core ledger logic
 
         # 2. Sanity check: does vision output look realistic?
         objects = vision_output.get("objects", [])

@@ -6,11 +6,11 @@ from narrative_layer import NarrativeLayer
 
 class ImpactLensEngine:
     def __init__(self, api_key: str):
-        self.vision       = VisionLayer(api_key=api_key)
+        self.vision       = VisionLayer()
         self.activity     = ActivityLayer()
         self.impact       = ImpactLayer()
         self.verification = VerificationLayer()
-        self.narrative    = NarrativeLayer(api_key=api_key)
+        self.narrative    = NarrativeLayer()
 
     def analyze(self, image_path: str) -> dict:
         # Step 1: understand the scene

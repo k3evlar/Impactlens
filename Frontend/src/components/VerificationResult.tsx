@@ -28,8 +28,10 @@ export interface VerificationData {
   reason?: string;
   explanation?: string;
   objects_detected?: string[];
-  ipfsUri: string;
+  ipfsUri?: string;
   imageHash: string;
+  timestamp?: number;
+  mintTxId?: string;
   impactScore?: number;
   impact_score?: number;
   effort?: string;
@@ -49,6 +51,7 @@ export interface VerificationData {
   }>;
   status?: string;
   previewUrl?: string;
+  finalDecision?: string;
 }
 
 
@@ -77,7 +80,7 @@ const item = {
 const VerificationResult = ({ data, onReset, onMint, onReevaluate, isMinting }: VerificationResultProps) => {
   const confidencePct = Math.round(data.confidence * 100);
   const impactValue = data.impactScore ?? data.impact_score ?? 0;
-  const isAccepted = impactValue >= 40;
+  const isAccepted = data.verified;
   const activityLabel = (data.activity || data.detected_class || "unknown").replace(/_/g, " ");
   const objectList = data.objects_detected || [];
 
@@ -409,16 +412,27 @@ const VerificationResult = ({ data, onReset, onMint, onReevaluate, isMinting }: 
             <span className="text-muted-foreground/60 select-none mr-2">SHA-Hash:</span>
             {data.imageHash}
           </p>
-          <Button
-            variant="outline"
-            className="w-full border-primary/30 text-primary font-semibold hover:bg-primary/5 hover:border-primary/50 transition-colors h-12"
-            asChild
-          >
-            <a href={data.ipfsUri} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Analyze Proof on Public IPFS Scan
-            </a>
-          </Button>
+          {data.ipfsUri ? (
+            <Button
+              variant="outline"
+              className="w-full border-primary/30 text-primary font-semibold hover:bg-primary/5 hover:border-primary/50 transition-colors h-12"
+              asChild
+            >
+              <a href={data.ipfsUri.startsWith('ipfs://') ? `https://gateway.pinata.cloud/ipfs/${data.ipfsUri.replace('ipfs://', '')}` : data.ipfsUri} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Analyze Proof on Trusted Pinata Network
+              </a>
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              disabled
+              className="w-full border-border/50 text-muted-foreground font-semibold h-12 cursor-not-allowed"
+            >
+              <ExternalLink className="mr-2 h-4 w-4 opacity-50" />
+              <span className="opacity-70">Awaiting IPFS Anchor...</span>
+            </Button>
+          )}
         </div>
       </motion.div>
 

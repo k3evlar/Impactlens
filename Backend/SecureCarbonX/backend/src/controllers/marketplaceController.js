@@ -46,11 +46,8 @@ const createListing = async (req, res) => {
         const userKey = resolveUserKey(req);
         const { amount, price, activity, imageHash } = req.body;
         
-        // Tier check before listing
         const wallet = getOrCreateWallet(userKey);
-        if (wallet.tier !== "GOLD" && wallet.tier !== "PLATINUM") {
-            return res.status(403).json({ error: 'Only Gold/Platinum users can list credits' });
-        }
+        // Tier check removed per user request
 
         if (wallet.credits < amount) {
             return res.status(400).json({ error: 'Insufficient credits to list' });
@@ -89,7 +86,7 @@ const purchaseListing = async (req, res) => {
         const { listingId } = req.body;
         
         const store = readStore();
-        const listingIndex = store.marketplaceListings.findIndex(l => l.id === listingId);
+        const listingIndex = (store.marketplaceListings || []).findIndex(l => l.id === listingId);
         
         if (listingIndex === -1) {
             return res.status(404).json({ error: 'Listing not found' });
@@ -100,13 +97,32 @@ const purchaseListing = async (req, res) => {
             return res.status(400).json({ error: 'Listing is no longer active' });
         }
 
-        // Transfer logic
-        const buyerWallet = getOrCreateWallet(buyerKey);
-        // (In a real app, check for USD payment here)
+        // Get or create wallet directly from THIS store instance to ensure consistency
+        if (!store.wallets) store.wallets = [];
+        let buyerWallet = store.wallets.find(w => w.userKey === buyerKey);
+        if (!buyerWallet) {
+            buyerWallet = {
+                userKey: buyerKey,
+                credits: 0,
+                totalEarned: 0,
+                totalSpent: 0,
+                tier: "BRONZE",
+                purchases: [],
+                transactions: []
+            };
+            store.wallets.push(buyerWallet);
+        }
         
         // Move credits to buyer
         buyerWallet.credits += listing.amount;
         buyerWallet.totalEarned += listing.amount; // Optional: depending on policy
+
+        if (!buyerWallet.transactions) buyerWallet.transactions = [];
+        buyerWallet.transactions.push({
+            type: 'earned',
+            amount: listing.amount,
+            timestamp: Date.now()
+        });
 
         // Update listing
         listing.status = "Sold";

@@ -3,9 +3,10 @@ import { Leaf, UploadCloud, CheckCircle, BrainCircuit, Network, Coins, Sparkles 
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { getUserTier } from "@/lib/utils";
+import { useWallet } from "@/hooks/use-wallet";
 
 const Dashboard = () => {
+  const { credits, tier, transactions, isLoading } = useWallet();
   const [stats, setStats] = useState({ credits: 0, uploads: 0, verified: 0 });
   const [userName, setUserName] = useState<string>("");
 
@@ -25,15 +26,10 @@ const Dashboard = () => {
           if (userDataStr) {
             const userData = JSON.parse(userDataStr);
             setStats({
-              credits: userData.credits || 0,
+              credits: credits, // Use credits from hook
               uploads: userData.uploads ? userData.uploads.length : (userData.history || []).length,
               verified: (userData.history || []).filter((h: any) => h.verified).length,
             });
-          } else {
-            // First time loading - Initialize data
-            const initialData = { credits: 0, uploads: [], history: [] };
-            localStorage.setItem(dataKey, JSON.stringify(initialData));
-            setStats({ credits: 0, uploads: 0, verified: 0 });
           }
         }
       } catch (e) {
@@ -42,11 +38,11 @@ const Dashboard = () => {
     };
 
     loadUserData();
-  }, []);
+  }, [credits]); // Sync stats when credits change
 
   const mockGraphData = Array.from({ length: 7 }, (_, i) => ({
     name: `Day ${i + 1}`,
-    credits: i === 6 ? stats.credits : Math.max(0, Math.floor((stats.credits / 6) * i))
+    credits: i === 6 ? stats.credits : Number(Math.max(0, (stats.credits / 6) * i).toFixed(2))
   }));
 
   const steps = [
@@ -105,7 +101,7 @@ const Dashboard = () => {
              </div>
              <div className="flex flex-col">
                <span className="text-sm font-semibold text-muted-foreground uppercase tracking-widest whitespace-nowrap opacity-80">Current Rank</span>
-               <span className="font-heading text-xl font-bold text-primary whitespace-nowrap">{getUserTier(stats.credits)}</span>
+                <span className="font-heading text-xl font-bold text-primary whitespace-nowrap uppercase">{tier}</span>
              </div>
            </div>
         </div>
@@ -132,7 +128,7 @@ const Dashboard = () => {
                         <Leaf className="w-5 h-5 text-green-600" />
                       </div>
                     </div>
-                    <p className="text-5xl font-black font-heading text-green-600 tracking-tighter">{stats.credits}</p>
+                    <p className="text-5xl font-black font-heading text-green-600 tracking-tighter">{Number(stats.credits).toFixed(2)}</p>
                  </div>
 
                  <div className="p-8 flex flex-col justify-center hover:bg-secondary/20 transition-colors group cursor-default">

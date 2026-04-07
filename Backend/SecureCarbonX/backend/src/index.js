@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: 'securecarbonx.env' });
 const express = require('express');
 const cors = require('cors');
 const apiRoutes = require('./routes/api');
@@ -32,6 +32,13 @@ app.get('/', (req, res) => {
     res.json({ message: "SecureCarbonX Backend Orchestrator is running." });
 });
 
+// Dangerous Reset Endpoint
+app.post('/api/dangerous/reset', (req, res) => {
+    const { resetLedger } = require('./services/fraudDetectionService');
+    resetLedger();
+    res.json({ success: true, message: 'Ledger cleared successfully' });
+});
+
 app.listen(PORT, () => {
-    console.log(`Backend server listening on port ${PORT}`);
+    console.log(`[SecureCarbonX] Server running on http://localhost:${PORT}`);
 });

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { CheckCircle2, XCircle, ExternalLink, Calendar, Link2, Brain } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
@@ -95,17 +96,15 @@ const HistoryPage = () => {
                       </div>
                     )}
                     
-                    {record.ipfsUri && (
-                      <a 
-                        href={record.ipfsUri}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    {record.imageHash && (
+                      <Link 
+                        to={`/verify/${record.imageHash}`}
                         className="flex items-center gap-1.5 text-sm text-blue-500 hover:text-blue-400 hover:underline transition-colors px-1"
                       >
                         <Link2 className="w-4 h-4" />
                         View on IPFS
                         <ExternalLink className="w-3.5 h-3.5 ml-0.5" />
-                      </a>
+                      </Link>
                     )}
                   </div>
 

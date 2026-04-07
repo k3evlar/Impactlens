@@ -15,6 +15,7 @@ __pycache__/
 .env
 Backend/SecureCarbonX/ai-service/.env
 Backend/SecureCarbonX/backend/.env
+Backend/SecureCarbonX/backend/securecarbonx.env
 
 # Build Artifacts & Logs
 dist/

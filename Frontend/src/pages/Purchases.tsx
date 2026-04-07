@@ -2,32 +2,10 @@ import { useState, useEffect } from "react";
 import { Receipt, Calendar, ExternalLink, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
+import { useWallet } from "@/hooks/use-wallet";
 
 const PurchasesPage = () => {
-  const [purchases, setPurchases] = useState<any[]>([]);
-
-  useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        if (user.email) {
-          const dataKey = `data_${user.email}`;
-          const userDataStr = localStorage.getItem(dataKey);
-          if (userDataStr) {
-            const userData = JSON.parse(userDataStr);
-            // Sort latest first based on timestamp
-            const sortedPurchases = (userData.purchases || []).sort(
-              (a: any, b: any) => b.timestamp - a.timestamp
-            );
-            setPurchases(sortedPurchases);
-          }
-        }
-      } catch (e) {
-        console.error("Failed to load purchases", e);
-      }
-    }
-  }, []);
+  const { purchases, isLoading } = useWallet();
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-10">
@@ -97,7 +75,7 @@ const PurchasesPage = () => {
                   {/* Pricing & Hash */}
                   <div className="flex flex-col items-start sm:items-end gap-2 sm:gap-3 mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-border/50">
                     <span className="font-bold text-xl text-green-500 bg-green-500/10 px-3 py-1 rounded-xl whitespace-nowrap">
-                       -{record.amount} Credits
+                       -{Number(record.amount || 0).toFixed(2)} Credits
                     </span>
                     
                     {record.transactionHash && (

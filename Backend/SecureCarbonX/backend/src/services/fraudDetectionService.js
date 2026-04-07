@@ -308,6 +308,7 @@ function storeFraudRecord(record) {
         minted: record.minted === true,
         mintedAt: record.minted === true ? Date.now() : null,
         mintTxId: record.mintTxId || null,
+        impactScore: record.impactScore || 0,
         // Phase 2 Metadata
         trustBreakdown: record.trustBreakdown || null,
         impact: record.impact || null,
@@ -422,9 +423,23 @@ function getPublicVerificationData(imageHash) {
         ipfsUri: record.ipfsUri,
         imageHash: record.imageHash,
         minted: record.minted,
+        impactScore: record.impactScore,
+        impact_score: record.impactScore,
+        narrative: record.narrative,
+        mintTxId: record.mintTxId,
         createdAt: record.createdAt,
         finalDecision: record.finalDecision
     };
+}
+
+function resetLedger() {
+    const emptyStore = {
+        wallets: [],
+        marketplaceListings: [],
+        records: []
+    };
+    writeStore(emptyStore);
+    return true;
 }
 
 module.exports = {
@@ -434,5 +449,7 @@ module.exports = {
     calculateImageHash,
     createPerceptualFingerprint,
     getPublicVerificationData,
-    readStore
+    readStore,
+    writeStore,
+    resetLedger
 };

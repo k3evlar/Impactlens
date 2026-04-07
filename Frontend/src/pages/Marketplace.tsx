@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ShoppingBag, Coins, X, ShieldCheck, Loader2, Lock, ArrowRight, TrendingUp, Building2, ExternalLink } from "lucide-react";
 import axios from "axios";
+import { useWallet } from "@/hooks/use-wallet";
 
 const API_BASE = "http://localhost:5000/api";
 
@@ -21,15 +22,8 @@ const CATALOG_ITEMS = [
 ];
 
 const MarketplacePage = () => {
+  const { credits, tier, totalEarned, totalSpent, purchases, isLoading, refreshWallet } = useWallet();
   const [activeTab, setActiveTab] = useState<"redeem" | "sell" | "buy">("redeem");
-  
-  // Wallet State
-  const [credits, setCredits] = useState(0);
-  const [totalEarned, setTotalEarned] = useState(0);
-  const [totalSpent, setTotalSpent] = useState(0);
-  const [tier, setTier] = useState("BRONZE");
-  const [purchases, setPurchases] = useState<any[]>([]);
-  const [isLoadingWallet, setIsLoadingWallet] = useState(true);
   
   // Market Listings State
   const [listings, setListings] = useState<any[]>([]);
@@ -38,6 +32,10 @@ const MarketplacePage = () => {
   // Form States
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  
+  // Sell Form States
+  const [sellForm, setSellForm] = useState({ amount: "", price: "", activity: "Verified AI Action" });
+  const [isListing, setIsListing] = useState(false);
 
   // Helper to get session ID for backend wallet lookup
   const getUserKey = () => {
@@ -46,26 +44,6 @@ const MarketplacePage = () => {
       try { return JSON.parse(userStr).email || "anonymous"; } catch(e) {}
     }
     return "anonymous";
-  };
-
-  // Sync wallet from Real Backend
-  const syncWallet = async () => {
-    try {
-      const userKey = getUserKey();
-      const response = await axios.get(`${API_BASE}/user/wallet`, {
-        headers: { "x-user-key": userKey }
-      });
-      const wallet = response.data;
-      setCredits(wallet.credits || 0);
-      setTotalEarned(wallet.totalEarned || 0);
-      setTotalSpent(wallet.totalSpent || 0);
-      setTier(wallet.tier || "BRONZE");
-      setPurchases(wallet.purchases || []);
-    } catch (e) {
-      console.error("Wallet sync error:", e);
-    } finally {
-      setIsLoadingWallet(false);
-    }
   };
 
   const fetchMarketListings = async () => {
@@ -81,14 +59,9 @@ const MarketplacePage = () => {
   };
 
   useEffect(() => {
-    syncWallet();
     if (activeTab === "buy" || activeTab === "sell") {
       fetchMarketListings();
     }
-    
-    // Listen for storage events (emitted by Upload page)
-    window.addEventListener("storage", syncWallet);
-    return () => window.removeEventListener("storage", syncWallet);
   }, [activeTab]);
 
   const handleConfirmRedemption = async () => {
@@ -106,13 +79,8 @@ const MarketplacePage = () => {
       });
 
       if (response.data.success) {
-        const wallet = response.data.wallet;
-        setCredits(wallet.credits);
-        setTotalSpent(wallet.totalSpent);
-        setPurchases(wallet.purchases);
         toast.success(`Successfully redeemed ${selectedItem.name}! Check Purchases for details.`);
-        // Notify other components
-        window.dispatchEvent(new Event("storage"));
+        refreshWallet();
       }
     } catch (e: any) {
       toast.error(e.response?.data?.error || "Transaction failed.");
@@ -140,7 +108,7 @@ const MarketplacePage = () => {
 
   const prog = getTierProgress();
 
-  if (isLoadingWallet) {
+  if (isLoading) {
     return (
       <div className="flex h-[70vh] items-center justify-center">
         <Loader2 className="w-10 h-10 text-green-500 animate-spin" />
@@ -292,23 +260,6 @@ const MarketplacePage = () => {
       {/* ========================================================= */}
       {activeTab === "sell" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-          {(tier === "BRONZE" || tier === "SILVER") ? (
-            <Card className="bg-[#0a0f0a] border-dashed border-gray-700/50 py-16 text-center">
-              <CardContent className="flex flex-col items-center justify-center h-full space-y-4">
-                <div className="p-4 rounded-full bg-gray-900 border border-gray-800 text-gray-500">
-                  <Lock className="w-8 h-8" />
-                </div>
-                <h3 className="text-xl font-bold text-white mt-4">Selling credits is available for Gold tier and above</h3>
-                <p className="text-muted-foreground flex flex-col items-center">
-                  You need 20 CC total earned to unlock selling to corporate buyers.
-                  <span className="font-mono mt-2 bg-gray-900 px-3 py-1 rounded-md border border-gray-800 text-white">Current: {totalEarned.toFixed(2)} CC</span>
-                </p>
-                <Button variant="outline" className="mt-4 border-green-500/30 text-green-400 hover:bg-green-500/10" onClick={() => window.location.href='/upload'}>
-                  Upload Activity to Earn More <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-6">
                 
@@ -350,10 +301,54 @@ const MarketplacePage = () => {
                   <div className="px-5 py-4 border-b border-green-500/10">
                     <h3 className="font-bold text-green-400 flex items-center gap-2"><TrendingUp className="w-5 h-5"/> List Your Credits for Sale</h3>
                   </div>
-                  <div className="p-5 space-y-5">
-                    <p className="text-sm text-muted-foreground">Listing logic implementation pending (Backend state mutation ready).</p>
-                    <Button className="w-full bg-green-500 hover:bg-green-400 text-black font-bold h-11" onClick={() => toast.info("Listing form submission wiring in progress.")}>
-                      List for Sale
+                  <div className="p-5 space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-muted-foreground font-semibold uppercase">Amount of CC</label>
+                      <input 
+                        type="number" 
+                        placeholder="e.g. 5"
+                        value={sellForm.amount}
+                        onChange={(e) => setSellForm({...sellForm, amount: e.target.value})}
+                        className="flex h-10 w-full rounded-md border border-green-500/30 bg-background/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 transition-all font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-muted-foreground font-semibold uppercase">Price per CC (USD)</label>
+                      <input 
+                        type="number" 
+                        placeholder="e.g. 4.50"
+                        value={sellForm.price}
+                        onChange={(e) => setSellForm({...sellForm, price: e.target.value})}
+                        className="flex h-10 w-full rounded-md border border-green-500/30 bg-background/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 transition-all font-mono"
+                      />
+                    </div>
+                    <Button 
+                       className="w-full bg-green-500 hover:bg-green-400 text-black font-bold h-11 mt-2" 
+                       disabled={isListing || !sellForm.amount || !sellForm.price}
+                       onClick={async () => {
+                         try {
+                           setIsListing(true);
+                           const sellerKey = getUserKey();
+                           await axios.post(`${API_BASE}/marketplace/list`, {
+                             amount: Number(sellForm.amount),
+                             price: Number(sellForm.price),
+                             activity: sellForm.activity,
+                             imageHash: `usr-${Date.now()}` // Mock hash for now
+                           }, {
+                             headers: { "x-user-key": sellerKey }
+                           });
+                           toast.success("Credits listed successfully!");
+                           setSellForm({ amount: "", price: "", activity: "Verified AI Action" });
+                           fetchMarketListings();
+                           refreshWallet();
+                         } catch(e: any) {
+                           toast.error(e.response?.data?.error || "Failed to list credits");
+                         } finally {
+                           setIsListing(false);
+                         }
+                       }}
+                    >
+                      {isListing ? <Loader2 className="w-5 h-5 animate-spin" /> : "List for Sale"}
                     </Button>
                   </div>
                 </div>
@@ -375,7 +370,6 @@ const MarketplacePage = () => {
                  </div>
               </div>
             </div>
-          )}
         </motion.div>
       )}
 
@@ -444,7 +438,7 @@ const MarketplacePage = () => {
                                   headers: { "x-user-key": buyerKey }
                                 });
                                 toast.success("Purchase successful! Verified credits transferred to your wallet.");
-                                syncWallet();
+                                refreshWallet();
                                 fetchMarketListings();
                               } catch(e: any) {
                                 toast.error(e.response?.data?.error || "Purchase failed.");
