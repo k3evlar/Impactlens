@@ -2,6 +2,7 @@ require('dotenv').config({ path: 'securecarbonx.env' });
 const express = require('express');
 const cors = require('cors');
 const apiRoutes = require('./routes/api');
+const esgRouter = require('./controllers/esgController');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -11,6 +12,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api', apiRoutes);
+app.use('/api/esg', esgRouter);
 
 app.use((err, req, res, next) => {
     if (!err) {

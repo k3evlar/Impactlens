@@ -23,7 +23,7 @@ const ESGDashboard = () => {
         const userId = userStr ? (JSON.parse(userStr).email || "anonymous") : "anonymous";
         
         // Pass credits to sync with local wallet state
-        const response = await axios.get(`${API_BASE}/esg/summary/${userId}?credits=${credits}`);
+        const response = await axios.get(`${API_BASE}/esg/summary/${encodeURIComponent(userId)}?credits=${credits}`);
         setEsgData(response.data);
       } catch (error) {
         console.error("ESG Data Fetch Error:", error);
@@ -60,10 +60,15 @@ const ESGDashboard = () => {
       doc.text("SecureCarbonX", 20, 30);
       doc.setTextColor(34, 197, 94);
       doc.text("ESG Certificate", 95, 30);
+      
+      // Tagline from remote
+      doc.setFontSize(10);
+      doc.setTextColor(134, 239, 172);
+      doc.setFont("helvetica", "normal");
+      doc.text("Powered by multimodal AI verification pipeline", 20, 40);
 
       // User Context
       doc.setTextColor(200, 200, 200);
-      doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
       doc.text(`Issued To: ${esgData.userId}`, 20, 60);
       doc.text(`Tier: ${tier}`, 20, 70);

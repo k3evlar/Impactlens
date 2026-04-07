@@ -18,6 +18,7 @@ import ESGDashboard from "./pages/ESGDashboard";
 import Login from "./pages/Login";
 import Verify from "./pages/Verify";
 import NotFound from "./pages/NotFound";
+import ESGDashboard from "./pages/ESGDashboard";
 
 const queryClient = new QueryClient();
 

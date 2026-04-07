@@ -1,33 +1,34 @@
-const getESGSummary = async (req, res) => {
+const express = require('express');
+const { getOrCreateWallet } = require('../services/walletService');
+
+const router = express.Router();
+
+router.get('/summary/:userId', (req, res) => {
     try {
         const { userId } = req.params;
-        const queryCredits = parseFloat(req.query.credits || "0");
+        const wallet = getOrCreateWallet(userId);
         
-        // Base numerical conversions
-        const totalCredits = queryCredits;
+        const overrideCredits = req.query.credits ? parseFloat(req.query.credits) : null;
+        const credits = (overrideCredits !== null && !isNaN(overrideCredits)) ? overrideCredits : (wallet.credits || 0);
+
+        // Calculate metrics using local UI-expected scaling
+        const totalCredits = credits;
         const co2OffsetKg = (totalCredits * 0.85).toFixed(2);
         const treesEquivalent = Math.round(totalCredits * 0.04);
         const carsOffDays = (totalCredits * 0.00037).toFixed(3);
+        const flightsOffset = (totalCredits * 0.0012).toFixed(3);
 
-        // Simulated Activity Breakdown
-        // Using strict scaling based on the exact amount of credits.
-        const baseBreakdown = [
-            { name: "Reforestation", value: totalCredits * 0.4 },
-            { name: "Carpooling", value: totalCredits * 0.25 },
-            { name: "Recycling", value: totalCredits * 0.2 },
-            { name: "Energy Saving", value: totalCredits * 0.15 }
-        ];
+        // Activity Breakdown - uses "name" and "value" for UI charts, plus colors from remote
+        const activityBreakdown = [
+            { name: "Reforestation", value: totalCredits * 0.4, color: "#22c55e" },
+            { name: "Carpooling", value: totalCredits * 0.25, color: "#4ade80" },
+            { name: "Recycling", value: totalCredits * 0.2, color: "#16a34a" },
+            { name: "Energy Saving", value: totalCredits * 0.15, color: "#86efac" }
+        ].map(item => totalCredits > 0 ? item : { ...item, value: 0 });
 
-        // Ensure 0 value renders as minimally visible if they have no credits
-        const activityBreakdown = totalCredits > 0 
-            ? baseBreakdown 
-            : baseBreakdown.map(b => ({ ...b, value: 0 }));
-
-        // Generate 6-month simulated growth curve
-        // Scales based on current credits to create a plausible chart
+        // Monthly Growth - uses "month" and "impact" for UI AreaChart
         const months = ["Nov", "Dec", "Jan", "Feb", "Mar", "Apr"];
         const monthlyGrowth = months.map((month, index) => {
-            // Simulated historic curve (growing towards the current totalCredits)
             const simulatedHistoricValue = totalCredits * (Math.pow((index + 1) / 6, 1.5));
             return {
                 month,
@@ -35,21 +36,23 @@ const getESGSummary = async (req, res) => {
             };
         });
 
-        return res.json({
+        const responseData = {
             userId,
+            tier: wallet.tier || 'BRONZE',
             totalCredits,
             co2OffsetKg,
             treesEquivalent,
             carsOffDays,
+            flightsOffset,
             activityBreakdown,
-            monthlyGrowth
-        });
+            monthlyGrowth,
+            verifiedAt: new Date().toISOString()
+        };
 
+        res.json(responseData);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
-};
+});
 
-module.exports = {
-    getESGSummary
-};
+module.exports = router;
