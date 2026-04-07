@@ -1,4 +1,6 @@
-require('dotenv').config({ path: 'securecarbonx.env' });
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config({ path: 'securecarbonx.env' });
+}
 const express = require('express');
 const cors = require('cors');
 const apiRoutes = require('./routes/api');
@@ -41,6 +43,10 @@ app.post('/api/dangerous/reset', (req, res) => {
     res.json({ success: true, message: 'Ledger cleared successfully' });
 });
 
-app.listen(PORT, () => {
-    console.log(`[SecureCarbonX] Server running on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`[SecureCarbonX] Server running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
