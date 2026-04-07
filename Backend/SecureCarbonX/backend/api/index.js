@@ -1,3 +1,3 @@
-// Bridge for Vercel Serverless Functions
+// Vercel Serverless Function Bridge
 const app = require('../src/index.js');
 module.exports = app;
